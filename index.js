@@ -69,19 +69,7 @@ function handleWeather(request, response) {
   }
 }
 
-//   const weather = require('./data/weather.json');
-//   const weatherData = weather.data;
-//   let weatherArr = [];
-//   weatherData.forEach(item => {
-//     let obj = {
-//       'forecast': item.weather.description,
-//       'time' : item.valid_date,
-//     };
-//     weatherArr.push(obj);
-//   })
 
-//   response.send(weatherArr);
-// }
 
 function Weather(forecast, datetime) {
   this.forecast = forecast;
