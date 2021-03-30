@@ -5,20 +5,61 @@ const express = require('express');
 const cors = require('cors');
 const superagent = require('superagent');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 const app = express();
 
 app.use(cors());
 
-
-
 app.get('/location', handleLocation);
 
 app.get('/weather', handleWeather)
 
+app.get('/park', handleParks);
+
+app.use('*', noExist);
+app.use(errorHandler);
+function noExist(request, response) {
+  response.status(404).send('Error 404, Page Not Found!');
+}
+function errorHandler(err, request, response) {
+  response.status(500).send('Error 500, Server Internal Error');
+}
+
+function handleParks (request, response) {
+  let key = process.env.PARK_API_KEY;
+  let url = `https://developer.nps.gov/api/v1/parks?api_key=${key}`;
+
+  superagent.get(url).then(res => {
+    let info = res.body.data;
+    info.forEach(element => {
+      let url = element.url;
+      let name = element.fullName;
+      let description = element.description;
+      let fees = '0.0';
+      let address = element.addresses[0].line1 + ', ' + element.addresses[0].city + ', ' + element.addresses[0].stateCode + ' ' + element.addresses[0].postalCode;
+      let parksData = new Park(name, address, fees, description, url);
+
+    });
+    response.send(allArr);
+  })
+
+}
+
+let allArr = [];
+function Park(name,address,fees,description,url){
+  this.name = name;
+  this.address = address;
+  this.fee = this.fees;
+  this.description = description;
+  this.url = url;
+  allArr.push(this);
+}
+
 
 let myLocalLocations ={};
+let lat;
+let lon;
 function handleLocation(request, response) {
   let city = request.query.city;
   if (myLocalLocations[city]) {
@@ -30,6 +71,8 @@ function handleLocation(request, response) {
       const locationData = res.body[0];
       const location = new Location(city, locationData);
       myLocalLocations[city] = location;
+      lat=locationData.lat;
+      lon=locationData.lon;
       response.send(location);
 
     }).catch((err)=> {
@@ -52,29 +95,27 @@ function handleWeather(request, response) {
   if (myLocalWeather[city]) {
     response.send(myLocalWeather[city]);
   } else {
+    let obj={};
+    let newArr =[];
     let key = process.env.WETH_API_KEY;
-    const url = `https://api.weatherbit.io/v2.0/forecast/daily?city=${city}&key=${key}`
+    const url = `https://api.weatherbit.io/v2.0/forecast/daily?lat=${lat}&lon=${lon}&key=${key}`;
     superagent.get(url).then(res => {
-      console.log(res.body.data);
-      const data = res.body.data.map((wData) => {
-        return new Weather(wData.weather.description, wData.valid_date);
-        console.log(data);
-      });
-      for (let i = 0; i < 8; i++) {
-        data.pop();
-      }
-      response.send(data);
-      myLocalWeather[city] = data;
+      let data = res.body.data;
+      console.log(data);
+      data.forEach(item => {
+        obj = {
+          'forecast': item.weather.description,
+          'time': item.valid_date
+        }
+        newArr.push(obj);
+      })
+
+      response.send(newArr);
     })
   }
 }
 
 
 
-function Weather(forecast, datetime) {
-  this.forecast = forecast;
-  this.datetime = datetime;
-}
 
-
-app.listen(process.env.PORT || 3000, ()=> console.log(`App is running on Server on port: ${PORT}`))
+app.listen(process.env.PORT, ()=> console.log(`App is running on Server on port: ${PORT}`))
