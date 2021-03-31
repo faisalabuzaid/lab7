@@ -15,7 +15,7 @@ app.get('/location', handleLocation);
 
 app.get('/weather', handleWeather)
 
-app.get('/park', handleParks);
+app.get('/parks', handleParks);
 
 app.use('*', noExist);
 app.use(errorHandler);
@@ -33,24 +33,25 @@ function handleParks (request, response) {
   superagent.get(url).then(res => {
     let info = res.body.data;
     info.forEach(element => {
-      let url = element.url;
       let name = element.fullName;
-      let description = element.description;
-      let fees = '0.0';
       let address = element.addresses[0].line1 + ', ' + element.addresses[0].city + ', ' + element.addresses[0].stateCode + ' ' + element.addresses[0].postalCode;
-      let parksData = new Park(name, address, fees, description, url);
+      let fee = '0.0';
+      let description = element.description;
+      let url = element.url;
+      new Park(name, address, fee, description, url);
 
     });
+    allArr.filter(i => (i.))
     response.send(allArr);
   })
 
 }
 
 let allArr = [];
-function Park(name,address,fees,description,url){
+function Park(name,address,fee,description,url){
   this.name = name;
   this.address = address;
-  this.fee = this.fees;
+  this.fee = fee;
   this.description = description;
   this.url = url;
   allArr.push(this);
@@ -65,7 +66,7 @@ function handleLocation(request, response) {
   if (myLocalLocations[city]) {
     response.send(myLocalLocations[city]);
   } else {
-    let key = process.env.GEO_API_KEY;
+    let key = process.env.GEOCODE_API_KEY;
     const url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;
     superagent.get(url).then(res=> {
       const locationData = res.body[0];
